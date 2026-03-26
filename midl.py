@@ -147,12 +147,7 @@ class MIDL:
 
             # ===== Optimize direction in subspace =====
             w_s, mi_s = self._optimize_direction_in_subspace(X, y, B)
-
-            # =====  Re-orthogonalization (Gram-Schmidt) =====
-            if W_list:
-                for w_prev in W_list:
-                    w_s = w_s - np.dot(w_s, w_prev) * w_prev
-                w_s = self._normalize(w_s)
+            w_s = self._normalize(w_s)
 
             W_list.append(w_s)
             mi_list.append(mi_s)
@@ -194,3 +189,71 @@ class MIDL:
         """Compute transformed dimensionless quantities Pi_hat = exp(log(Pi) @ W)."""
         X = np.log(np.asarray(Pi_independent, dtype=float))
         return np.exp(X @ W)
+
+    @staticmethod
+    def plot_component_vs_dependent(
+        Pi_independent,
+        pi_dependent,
+        W,
+        component_index: int = 0,
+        use_pi: bool = True,
+        log_x: bool = False,
+        log_y: bool = False,
+        title=None,
+        ax=None,
+    ):
+        """Plot recovered independent component vs dependent variable (2D).
+
+        Args:
+            Pi_independent: (N, n_features) all > 0
+            pi_dependent: (N,) dependent variable
+            W: (n_features, k_selected) directions
+            component_index: which recovered direction to plot (default 0 => first)
+            use_pi: if True plot pi_hat = exp(xhat), else plot xhat directly
+            log_x/log_y: set log scale for axes
+            title: optional plot title
+            ax: optional matplotlib axis
+        """
+        import matplotlib.pyplot as plt
+
+        Pi_independent = np.asarray(Pi_independent, dtype=float)
+        pi_dependent = np.asarray(pi_dependent, dtype=float).ravel()
+        W = np.asarray(W, dtype=float)
+
+        if Pi_independent.ndim != 2:
+            raise ValueError("Pi_independent must be 2D.")
+        if pi_dependent.ndim != 1:
+            raise ValueError("pi_dependent must be 1D after ravel().")
+        if Pi_independent.shape[0] != pi_dependent.shape[0]:
+            raise ValueError("Sample sizes do not match.")
+
+        if W.shape[0] != Pi_independent.shape[1]:
+            raise ValueError("W row dimension must match Pi_independent feature count.")
+        if not (0 <= component_index < W.shape[1]):
+            raise ValueError("component_index out of bounds for W.")
+
+        X = np.log(Pi_independent + 1e-12)
+        xhat = X @ W  # (N, k)
+        x = np.exp(xhat[:, component_index]) if use_pi else xhat[:, component_index]
+        y = pi_dependent
+
+        if ax is None:
+            _, ax = plt.subplots(figsize=(5.0, 4.0))
+
+        ax.scatter(x, y, s=18, alpha=0.65)
+
+        if use_pi:
+            ax.set_xlabel(f"$\\hat{{\\pi}}_{{{component_index + 1}}}$")
+        else:
+            ax.set_xlabel(f"$\\hat{{x}}_{{{component_index + 1}}}$")
+        ax.set_ylabel("pi_dependent")
+
+        if log_x:
+            ax.set_xscale("log")
+        if log_y:
+            ax.set_yscale("log")
+        if title is not None:
+            ax.set_title(title)
+
+        ax.grid(True, alpha=0.25)
+        return ax
