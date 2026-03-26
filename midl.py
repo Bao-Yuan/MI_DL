@@ -23,7 +23,7 @@ def calc_basis(D_in, tol=1e-12):
     # null space (columns of V corresponding to zero singular values)
     V = Vt.T
     null_space_cols = V[:, r:]   # shape: (m, k=n-r); basis vectors are columns
-    basis_matrices = null_space_cols.T  # shape: (k, m); 
+    basis_matrices = null_space_cols # shape: (m, k); 
 
     return basis_matrices, r
 

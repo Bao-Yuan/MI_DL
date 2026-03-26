@@ -7,13 +7,13 @@ from midl import MIDL
 def run_demo() -> None:
     # Synthetic example: u(x, y, z) = sin(xy) * cos(z).
     rng = np.random.default_rng(123)
-    n_samples = 150
-    x = rng.uniform(10.0, 60.0, n_samples)
-    y = rng.uniform(10.0, 70.0, n_samples)
-    z = rng.uniform(10.0, 80.0, n_samples)
+    n_samples = 200
+    x = rng.uniform(1.0, 5.0, n_samples)
+    y = rng.uniform(1.0, 5.0, n_samples)
+    z = rng.uniform(1.0, 5.0, n_samples)
     L = np.ones(n_samples)
-    X_raw = np.column_stack([x, y, z, L])
-    u = np.sin(x*y) * np.sin(z)
+    X_raw = np.column_stack([x, y, z,L])
+    u = np.sin(x*y/L/L) * np.cos(z/L)
 
     # Define dimension matrix
     D_in = np.matrix([1, 1, 1, 1])
@@ -23,7 +23,7 @@ def run_demo() -> None:
     print("Basis vectors dimension:", D_in.shape[1] - r)
     print("Basis vectors (π exponents):\n", basis)
     # Transform X_raw to Pi
-    Pi = np.exp(np.log(X_raw) @ basis.T)
+    Pi = np.exp(np.log(X_raw) @ basis)
  
 
     model = MIDL(
@@ -41,7 +41,7 @@ def run_demo() -> None:
     print(result["W"])
     print("dominant_q:", result["dominant_q"])
     print("drop ratios I_i / I_(i+1):", result["drop_ratios"])
-    alpha = basis.T @ result["W"] 
+    alpha = basis @ result["W"]
     print("\n=== Recovered exponents ===")
     print(alpha)
 
