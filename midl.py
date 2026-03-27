@@ -99,7 +99,7 @@ class MIDL:
         mi_best = -float(result.fun)
         return w_best, mi_best
 
-    def fit(self, Pi_independent, pi_dependent):
+    def fit(self, Pi_independent, pi_dependent, threshold):
         """Fit MIDL model.
 
         Args:
@@ -127,8 +127,6 @@ class MIDL:
 
         W_list = []   # List to store projection directions
         mi_list = []  # List to store mutual information values
-
-        threshold = 10  # Early stopping threshold for MI drop ratio
 
         for s in range(n_features):
 
@@ -171,6 +169,8 @@ class MIDL:
         # ===== Step 5: Assemble results =====
         W = np.column_stack(W_list)
         mi_scores = np.array(mi_list)
+        W = W[:, :dominant_q]
+        mi_scores = mi_scores[:dominant_q]
 
         # Low-dimensional representation in log-space
         xhat = X @ W
@@ -195,26 +195,16 @@ class MIDL:
         Pi_independent,
         pi_dependent,
         W,
+        dominant_q: int = 1,
         component_index: int = 0,
-        use_pi: bool = True,
-        log_x: bool = False,
-        log_y: bool = False,
         title=None,
         ax=None,
+        ax3d=None,
+        log_scale: bool = False, 
     ):
-        """Plot recovered independent component vs dependent variable (2D).
-
-        Args:
-            Pi_independent: (N, n_features) all > 0
-            pi_dependent: (N,) dependent variable
-            W: (n_features, k_selected) directions
-            component_index: which recovered direction to plot (default 0 => first)
-            use_pi: if True plot pi_hat = exp(xhat), else plot xhat directly
-            log_x/log_y: set log scale for axes
-            title: optional plot title
-            ax: optional matplotlib axis
-        """
+ 
         import matplotlib.pyplot as plt
+        from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
         Pi_independent = np.asarray(Pi_independent, dtype=float)
         pi_dependent = np.asarray(pi_dependent, dtype=float).ravel()
@@ -231,29 +221,48 @@ class MIDL:
             raise ValueError("W row dimension must match Pi_independent feature count.")
         if not (0 <= component_index < W.shape[1]):
             raise ValueError("component_index out of bounds for W.")
+        if dominant_q < 1:
+            raise ValueError("dominant_q must be >= 1.")
 
-        X = np.log(Pi_independent + 1e-12)
-        xhat = X @ W  # (N, k)
-        x = np.exp(xhat[:, component_index]) if use_pi else xhat[:, component_index]
+        Pi_hat = MIDL.compose_new_pi(Pi_independent, W)
+        x = Pi_hat[:, component_index]
         y = pi_dependent
 
         if ax is None:
             _, ax = plt.subplots(figsize=(5.0, 4.0))
 
         ax.scatter(x, y, s=18, alpha=0.65)
-
-        if use_pi:
-            ax.set_xlabel(f"$\\hat{{\\pi}}_{{{component_index + 1}}}$")
-        else:
-            ax.set_xlabel(f"$\\hat{{x}}_{{{component_index + 1}}}$")
-        ax.set_ylabel("pi_dependent")
-
-        if log_x:
+        if log_scale:
+            if np.any(x <= 0) or np.any(y <= 0):
+                raise ValueError("Log scale requires positive data.")
             ax.set_xscale("log")
-        if log_y:
             ax.set_yscale("log")
+        ax.set_xlabel(f"$\\hat{{\\pi}}_{{{component_index + 1}}}$")
+        ax.set_ylabel("pi_dependent")
         if title is not None:
             ax.set_title(title)
 
         ax.grid(True, alpha=0.25)
+
+        if dominant_q >= 2:
+            if W.shape[1] < 2:
+                raise ValueError("dominant_q >= 2 requires at least 2 columns in W.")
+
+            pi1 = Pi_hat[:, 0]
+            pi2 = Pi_hat[:, 1]
+            z = pi_dependent
+
+            if ax3d is None:
+                fig3d = plt.figure(figsize=(6.0, 5.0))
+                ax3d = fig3d.add_subplot(111, projection="3d")
+
+            ax3d.scatter(pi1, pi2, z, s=18, alpha=0.65)
+            ax3d.set_xlabel("$\\hat{\\pi}_{1}$")
+            ax3d.set_ylabel("$\\hat{\\pi}_{2}$")
+            ax3d.set_zlabel("pi_dependent")
+            if title is not None:
+                ax3d.set_title(f"{title} (3D)")
+
+            return ax, ax3d
+
         return ax
