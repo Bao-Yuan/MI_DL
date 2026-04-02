@@ -7,6 +7,8 @@ import numpy as np
 from scipy.linalg import null_space
 from scipy.optimize import differential_evolution
 from sklearn.feature_selection import mutual_info_regression
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D  
 
 ###############################################
 # Basis computation (Null space of D_in)
@@ -78,7 +80,9 @@ class MIDL:
         def objective(u_raw):
             u = self._normalize(np.asarray(u_raw, dtype=float))
             w = B @ u
-            xhat = X @ w 
+            xhat = np.empty(X.shape[0], dtype=float)
+            for i in range(X.shape[0]):
+                xhat[i] = np.dot(X[i, :], w)
             mi = self._estimate_mi(y, xhat)
             return -mi
 
@@ -188,7 +192,8 @@ class MIDL:
     def compose_new_pi(Pi_independent, W):
         """Compute transformed dimensionless quantities Pi_hat = exp(log(Pi) @ W)."""
         X = np.log(np.asarray(Pi_independent, dtype=float))
-        return np.exp(X @ W)
+        xhat = X @ W
+        return np.exp(xhat)
 
     @staticmethod
     def plot_component_vs_dependent(
@@ -203,9 +208,6 @@ class MIDL:
         log_scale: bool = False, 
     ):
  
-        import matplotlib.pyplot as plt
-        from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
-
         Pi_independent = np.asarray(Pi_independent, dtype=float)
         pi_dependent = np.asarray(pi_dependent, dtype=float).ravel()
         W = np.asarray(W, dtype=float)
