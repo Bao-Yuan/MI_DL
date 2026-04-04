@@ -43,14 +43,12 @@ class MIDL:
     def __init__(
         self,
         k_neighbors: int = 6,
-        de_maxiter: int = 300,
-        de_popsize: int = 20,
+        de_maxiter: int = 400,
         random_state: int = 42,
         eps_log: float = 1e-12,
     ) -> None:
         self.k_neighbors = k_neighbors
         self.de_maxiter = de_maxiter
-        self.de_popsize = de_popsize
         self.random_state = random_state
         self.eps_log = eps_log
 
@@ -92,9 +90,9 @@ class MIDL:
             bounds=bounds,
             strategy="best1bin",
             maxiter=self.de_maxiter,
-            popsize=self.de_popsize,
+            popsize=10*d_sub,
             seed=self.random_state,
-            polish=True,
+            polish=False,
             workers=1,
             updating="deferred",
         )
