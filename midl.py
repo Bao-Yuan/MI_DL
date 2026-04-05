@@ -175,7 +175,11 @@ class MIDL:
         mi_scores = mi_scores[:dominant_q]
 
         # Low-dimensional representation in log-space
-        xhat = X @ W
+        xhat = np.zeros((X.shape[0], W.shape[1]))
+        for i in range(X.shape[0]):
+            xi = X[i, :]
+            val = xi @ W
+            xhat[i, :] = val
 
         # ===== Final output =====
         return {
@@ -190,7 +194,11 @@ class MIDL:
     def compose_new_pi(Pi_independent, W):
         """Compute transformed dimensionless quantities Pi_hat = exp(log(Pi) @ W)."""
         X = np.log(np.asarray(Pi_independent, dtype=float))
-        xhat = X @ W
+        xhat = np.zeros((X.shape[0], W.shape[1]))
+        for i in range(X.shape[0]):
+            xi = X[i, :]
+            val = xi @ W
+            xhat[i, :] = val
         return np.exp(xhat)
 
     @staticmethod
