@@ -8,7 +8,8 @@ Mutual-Information-based Dimensional Learning (MIDL) from:
 ## Files
 
 - `midl.py`: core MIDL class and result dataclass.
-- `example.py`: runnable synthetic demo.
+- `example_math.ipynb`: runnable synthetic demo.
+- `Example`: This folder contains several examples of dimensionless analysis using MI-DL.
 - `requirements.txt`: Python dependencies.
 
 ## Quick start
@@ -22,7 +23,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 # run the demo
-python example.py
+python example_math.ipynb
 ```
 
 ## Notes
